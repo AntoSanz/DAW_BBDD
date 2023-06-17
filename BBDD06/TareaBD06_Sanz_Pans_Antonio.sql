@@ -17,8 +17,7 @@ SELECT SUMACOMPLEMENTOS('3') FROM DUAL;
 --EJERCICIO 02
 --CREAR FUNCION
 CREATE OR REPLACE FUNCTION CALCULARIRPF (p_nro_hijos IN NUMBER, p_sueldo_base IN NUMBER)
-RETURN NUMBER AS
-  v_irpf NUMBER(5,2);
+RETURN NUMBER AS v_irpf NUMBER(5,2);
 BEGIN
   IF p_sueldo_base < 1500 THEN
     v_irpf := 0.1;
@@ -69,6 +68,7 @@ CREATE OR REPLACE PROCEDURE CALCULARSUELDODEPT (
 
     BEGIN
      -- Comprobamos que el departamento exista
+     -- Para comprobarlo, hacer un count sobre N_DEPARTAMENTOS, si el es 0, no existe y en p_total_sueldo guardo -1 para los errores.
       SELECT COUNT(*) INTO p_total_sueldo FROM N_DEPARTAMENTOS WHERE COD_DEP = p_cod_dep;
       IF p_total_sueldo = 0 THEN
         RAISE NO_EXISTE_DEPARTAMENTO;
@@ -97,26 +97,46 @@ CREATE OR REPLACE PROCEDURE CALCULARSUELDODEPT (
         RETURN;
     ELSE
         p_total_sueldo := v_sueldo_total;
-        DBMS_OUTPUT.PUT_LINE('El total de los sueldos netos de los empleados de departamento ' || p_cod_dep || ' y nivel ' || p_cod_nivel || ' es: ' || v_sueldo_total);
+        --DBMS_OUTPUT.PUT_LINE('El total de los sueldos netos de los empleados de departamento ' || p_cod_dep || ' y nivel ' || p_cod_nivel || ' es: ' || v_sueldo_total);
     END IF;
 
     EXCEPTION
       WHEN NO_EXISTE_DEPARTAMENTO THEN
-        DBMS_OUTPUT.PUT_LINE('No existe el departamento con c�digo ' || p_cod_dep);
+        --DBMS_OUTPUT.PUT_LINE('No existe el departamento con c�digo ' || p_cod_dep);
         P_TOTAL_SUELDO := -1;
       WHEN NO_HAY_EMPLEADOS_DEPART THEN
-        DBMS_OUTPUT.PUT_LINE('El departamento ' || p_cod_dep || ' no tiene empleados.');
+        --DBMS_OUTPUT.PUT_LINE('El departamento ' || p_cod_dep || ' no tiene empleados.');
         P_TOTAL_SUELDO := -2;
       WHEN NO_HAY_EMPLEADOS_CURSOR THEN
-        DBMS_OUTPUT.PUT_LINE('No hay empleados que cumplan las condiciones en el departamento ' || p_cod_dep);
+        --DBMS_OUTPUT.PUT_LINE('No hay empleados que cumplan las condiciones en el departamento ' || p_cod_dep);
         P_TOTAL_SUELDO := -3;
 END;
 /
 
 --EJECUTAR PROCEDIMIENTO
-SET SERVEROUTPUT ON;
+
+/*SET SERVEROUTPUT ON;
 DECLARE
   v_total_sueldo NUMBER;
 BEGIN
-  CALCULARSUELDODEPT(p_cod_dep => 'D1', p_cod_nivel => '4', p_total_sueldo => v_total_sueldo);
+  v_total_sueldo := CALCULARSUELDODEPT(p_cod_dep => 'D1', p_cod_nivel => '4', p_total_sueldo => v_total_sueldo);
+END;*/
+
+SET SERVEROUTPUT ON;
+
+DECLARE
+    p_cod_dep N_DEPARTAMENTOS.COD_DEP%TYPE := 'D1'; -- Asigna el valor del código de departamento deseado
+    p_cod_nivel N_NIVELES.COD_NIVEL%TYPE := '4'; -- Asigna el valor del código de nivel deseado
+    v_total_sueldo NUMBER;
+BEGIN
+    CALCULARSUELDODEPT(p_cod_dep, p_cod_nivel, v_total_sueldo);
+    IF v_total_sueldo = -1 THEN
+        DBMS_OUTPUT.PUT_LINE('No existe el departamento con código ' || p_cod_dep);
+    ELSIF v_total_sueldo = -2 THEN
+        DBMS_OUTPUT.PUT_LINE('El departamento ' || p_cod_dep || ' no tiene empleados.');
+    ELSIF v_total_sueldo = -3 THEN
+        DBMS_OUTPUT.PUT_LINE('No hay empleados que cumplan las condiciones en el departamento ' || p_cod_dep);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('El total de los sueldos netos de los empleados del departamento ' || p_cod_dep || ' y nivel ' || p_cod_nivel || ' es: ' || v_total_sueldo);
+    END IF;
 END;
